@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-#set(CMAKE_C_COMPILER   /usr/bin/gcc)
-#set(CMAKE_CXX_COMPILER /usr/bin/g++)
-set(CMAKE_C_COMPILER   /usr/bin/gcc-12)
-set(CMAKE_CXX_COMPILER /usr/bin/g++-12)
+set(CMAKE_C_COMPILER   /usr/bin/gcc)
+set(CMAKE_CXX_COMPILER /usr/bin/g++)
 
 project(demokritos VERSION 1.0)
 
@@ -54,11 +52,6 @@ endif()
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/data/abundance.dat)
    file(DOWNLOAD https://www-nds.iaea.org/RIPL/masses/abundance.dat ${CMAKE_SOURCE_DIR}/data/abundance.dat)
 endif()
-#add_resource("data/abundance.dat" "demmasses")
-
-#add_resource("data/scoef.95a" "demstopping")
-#add_resource("data/scoef.95b" "demstopping")
-#add_resource("data/srim.txt" "demstopping")
 
 
 
@@ -120,7 +113,7 @@ add_library(demtarget ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-set(headers include/Target.hh include/TargetLayer.hh include/TargetElement.hh)
+set(headers include/Target.hh include/FitStateEnum.hh)
 install(TARGETS demtarget DESTINATION ${CMAKE_INSTALL_LIBDIR})
 #target_link_libraries(demreaction ${GSL_LIBRARIES})
 install(TARGETS demtarget LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

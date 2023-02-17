@@ -1,15 +1,12 @@
 #ifndef TARGET_ELEMENT_H
 #define TARGET_ELEMENT_H 1
 
-#include "Element.hh"
+#include "FitStateEnum.hh"
+
+class Element;
 
 class TargetElement {
    friend class TargetLayer;
-
-public:
-   enum class FitState { Free,
-                         Fixed,
-                         Fit };
 
 private:
    TargetElement(Element *el = nullptr, double atomic_percent = 100.);

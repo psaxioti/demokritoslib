@@ -1,5 +1,7 @@
 #include "Target.hh"
 
+#include "TargetLayer.hh"
+
 Target::Target() {
    TargetLayers.clear();
 }
@@ -56,11 +58,11 @@ double Target::GetElementAtomicPercentInLayer(Element *el, int Layer) {
    return TargetLayers[Layer]->GetElementAtomicPercent(el);
 }
 
-void Target::SetElementFitStateInLayer(Element *el, TargetElement::FitState FitState, int Layer) {
+void Target::SetElementFitStateInLayer(Element *el, FitState FitState, int Layer) {
    TargetLayers[Layer]->SetElementFitState(el, FitState);
 }
 
-TargetElement::FitState Target::GetElementFitStateInLayer(Element *el, int Layer) {
+FitState Target::GetElementFitStateInLayer(Element *el, int Layer) {
    return TargetLayers[Layer]->GetElementFitState(el);
 }
 

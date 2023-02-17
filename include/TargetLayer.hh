@@ -1,7 +1,12 @@
 #ifndef TARGET_LAYER_H
 #define TARGET_LAYER_H 1
 
-#include "TargetElement.hh"
+#include <vector>
+
+#include "FitStateEnum.hh"
+
+class TargetElement;
+class Element;
 
 class TargetLayer {
    friend class Target;
@@ -20,8 +25,8 @@ private:
    void SetElementAtomicPercent(Element *el, double atomic_percent);
    double GetElementAtomicPercent(Element *el);
 
-   void SetElementFitState(Element *el, TargetElement::FitState fitState);
-   TargetElement::FitState GetElementFitState(Element *el);
+   void SetElementFitState(Element *el, FitState fitState);
+   FitState GetElementFitState(Element *el);
 
    double GetLayerAtomicPerCent();
 

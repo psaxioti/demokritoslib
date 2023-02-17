@@ -13,7 +13,7 @@ void TargetElement::SetFitState(FitState NewFitState) {
    return;
 }
 
-TargetElement::FitState TargetElement::GetFitState() {
+FitState TargetElement::GetFitState() {
    return TargetElementFitState;
 }
 

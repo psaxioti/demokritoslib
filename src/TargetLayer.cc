@@ -1,5 +1,7 @@
 #include "TargetLayer.hh"
 
+#include "TargetElement.hh"
+
 TargetLayer::TargetLayer(double thick) : Thickness(thick) {
 }
 
@@ -16,7 +18,7 @@ double TargetLayer::GetThickness() {
 
 std::vector<Element *> TargetLayer::GetLayerElements() {
    std::vector<Element *> elems;
-   for (size_t i = 0; i < TargetElements.size(); ++i)
+   for (std::size_t i = 0; i < TargetElements.size(); ++i)
       elems.push_back(TargetElements[i]->GetElement());
    return elems;
 }
@@ -35,7 +37,7 @@ void TargetLayer::RemoveElement(Element *el) {
 
 int TargetLayer::ElementInLayer(Element *el) {
    if (TargetElements.size() > 0)
-      for (size_t i = 0; i < TargetElements.size(); ++i)
+      for (std::size_t i = 0; i < TargetElements.size(); ++i)
          if (TargetElements[i]->GetElement() == el)
             return i;
    return -1;
@@ -55,17 +57,17 @@ double TargetLayer::GetElementAtomicPercent(Element *el) {
    return -1;
 }
 
-void TargetLayer::SetElementFitState(Element *el, TargetElement::FitState fitState) {
+void TargetLayer::SetElementFitState(Element *el, FitState fitState) {
    int i = ElementInLayer(el);
    if (i >= 0)
       TargetElements[i]->SetFitState(fitState);
 }
 
-TargetElement::FitState TargetLayer::GetElementFitState(Element *el) {
+FitState TargetLayer::GetElementFitState(Element *el) {
    int i = ElementInLayer(el);
    if (i >= 0)
       return TargetElements[i]->GetFitState();
-   return TargetElement::FitState::Free;
+   return FitState::Free;
 }
 
 double TargetLayer::GetLayerAtomicPerCent() {
@@ -74,6 +76,6 @@ double TargetLayer::GetLayerAtomicPerCent() {
 
 void TargetLayer::CalculateAtomicPercent() {
    LayerAtomicPerCent = 0.;
-   for (size_t i = 0; i < TargetElements.size(); ++i)
+   for (std::size_t i = 0; i < TargetElements.size(); ++i)
       LayerAtomicPerCent += TargetElements[i]->GetAtomicPercent();
 }
