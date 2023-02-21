@@ -6,7 +6,7 @@
 class Isotope {
 public:
    /**
-    * Isoope class constructor.
+    * Isotope class constructor.
     *
     * @param Z Atomic number of isotope.
     * @param N Neutron numbers of isotope.

@@ -65,7 +65,8 @@ double Stopping::GetStraggling(double En, double InitialEnSpread, double LayerDE
 }
 
 double Stopping::ZBL_Stopping(double En, Isotope *BeamIso, Element *TargetEl) {
-   return ZBL_ElectronicStopping(En, BeamIso, TargetEl);
+   //   return ZBL_ElectronicStopping(En, BeamIso, TargetEl);
+   return (ZBL_ElectronicStopping(En, BeamIso, TargetEl) + ZBL_NuclearStopping(En, BeamIso, TargetEl));
 }
 
 double Stopping::ZBL_ElectronicStopping(double En, Isotope *BeamIso, Element *TargetEl) {
@@ -74,16 +75,16 @@ double Stopping::ZBL_ElectronicStopping(double En, Isotope *BeamIso, Element *Ta
    // Have to implement something better
    // Just added it here very roughly
    double effectivecharge = BeamIso->GetZ();
-   if (EnPerMass < 10.) {
-      double Slow = ZBL_coeffs[TargetEl][0] * pow(EnPerMass, ZBL_coeffs[TargetEl][1]) + ZBL_coeffs[TargetEl][2] * pow(EnPerMass, ZBL_coeffs[TargetEl][3]);
-      double Shigh = ZBL_coeffs[TargetEl][4] / pow(EnPerMass, ZBL_coeffs[TargetEl][5]) * log(ZBL_coeffs[TargetEl][6] / EnPerMass + ZBL_coeffs[TargetEl][7] * EnPerMass);
-      stopping = Slow * Shigh / (Slow + Shigh);
-   } else if (EnPerMass < 10000.) {
+   if (EnPerMass <= 10.) {
       double y = (TargetEl->GetZ() > 6) ? 0.45 : 0.35;
       stopping = ZBL_ElectronicStopping(10. * BeamIso->GetMass(), BeamIso, TargetEl) * std::pow(EnPerMass / 10., y);
+   } else if (EnPerMass < 10000.) {
+      double Slow = (ZBL_coeffs[TargetEl][0] * pow(EnPerMass, ZBL_coeffs[TargetEl][1])) + (ZBL_coeffs[TargetEl][2] * pow(EnPerMass, ZBL_coeffs[TargetEl][3]));
+      double Shigh = ZBL_coeffs[TargetEl][4] * log((ZBL_coeffs[TargetEl][6] / EnPerMass) + (ZBL_coeffs[TargetEl][7] * EnPerMass)) / pow(EnPerMass, ZBL_coeffs[TargetEl][5]);
+      stopping = Slow * Shigh / (Slow + Shigh);
    } else {
       double x = std::log(EnPerMass) / EnPerMass;
-      stopping = ZBL_coeffs[TargetEl][8] + ZBL_coeffs[TargetEl][9] * x + ZBL_coeffs[TargetEl][10] * std::pow(x, 2) + ZBL_coeffs[TargetEl][11] / x;
+      stopping = ZBL_coeffs[TargetEl][8] + (ZBL_coeffs[TargetEl][9] * x) + (ZBL_coeffs[TargetEl][10] * std::pow(x, 2)) + (ZBL_coeffs[TargetEl][11] / x);
    }
    return effectivecharge * stopping;
 }
@@ -94,7 +95,7 @@ double Stopping::ZBL_NuclearStopping(double En, Isotope *BeamIso, Element *Targe
    epsilon = (32.53 * TargetEl->GetMass() * En) / epsilon;
    double reducedNuclearStopping;
    if (epsilon <= 30.)
-      reducedNuclearStopping = std::log1p(1.1383 * epsilon) / (2 * (epsilon + .01321 * std::pow(epsilon, .21226) + .19593 * std::pow(epsilon, .5)));
+      reducedNuclearStopping = std::log1p(1.1383 * epsilon) / (2 * (epsilon + .01321 * std::pow(epsilon, .21226) + (.19593 * std::pow(epsilon, .5))));
    else
       reducedNuclearStopping = std::log(epsilon) / (2 * epsilon);
    double stopping = 8.462 * BeamIso->GetZ() * TargetEl->GetZ() * BeamIso->GetMass() * reducedNuclearStopping;

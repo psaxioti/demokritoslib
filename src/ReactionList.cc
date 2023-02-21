@@ -13,7 +13,7 @@ ReactionList::ReactionList(std::string R33folder) {
       char result[PATH_MAX];
       ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
       R33Folder = std::string(result, (count > 0) ? count : 0);
-      if (R33Folder == "/sr/local/bin")
+      if (R33Folder == "/src/local/bin")
          R33Folder == std::string(std::getenv("HOME")) + "/.R33Data";
       else
          R33Folder += "/R33Data";
@@ -36,7 +36,7 @@ void ReactionList::ReadReactionList() {
    while (ReactionFile >> Z >> A >> E >> th >> No >> Emin >> Emax >> name >> file_name) {
       std::getline(ReactionFile, source, '\n');
 
-      Reactions.push_back(new Reaction(Z, A, E, th, No, Emin, Emax, name, file_name, source));
+      Reactions.push_back(new Reaction(Z, A, E, th, name, file_name, source));
    }
    ReactionFile.close();
    return;

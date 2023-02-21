@@ -12,21 +12,50 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_spline.h>
 
-// Everything in keV and 10^18 atoms/cm2
-
 class Stopping {
 public:
+   /**
+    * Stopping class constructor.
+    *
+    * It will read and hold the values needed for the calculation of stopping powers.
+    */
    Stopping();
    ~Stopping();
 
-   double GetStopping(double En, Isotope *BeamIso, Element *TargetEl);
+   /// @brief Get stopping power
+   /// @param En Beam energy for which the stopping power will be calculated
+   /// @param BeamIso Isotope of beam
+   /// @param target Complete target that the beam navigates
+   /// @param Layer Layer of target the beam navigates
+   ///   If not provided it is assumed it travels through the first layer of the target
+   /// @return The complete stopping power of the target on the beam for the specified energy
    double GetStopping(double En, Isotope *BeamIso, Target *target, int Layer = 0);
+
+   /// @brief Set the desired stopping calculation
+   /// @param Stopping Can be either ZBL or SRIM.
+   ///   Default is ZBL.
+   ///   If parameters for the specific beam-target compination are missing the ZBL will be used.
    void SetStopping(std::string &Stopping);
 
-   double GetStraggling(double En, double InitialEnSpread, double LayerDE, Isotope *Beam, Element *TargetEl);
+   /// @brief Calulate energy spread after traveling a target layer that absorbes energy LayerDE
+   /// @param En Initial mean energy of beam in keV
+   /// @param InitialEnSpread Initial energy spread of beab in keV
+   /// @param LayerDE Energy lost in the layer traveled in keV
+   /// @param Beam Beam isotope
+   /// @param target Complete target that the beam navigates
+   /// @param Layer Layer of target the beam navigates
+   ///   If not provided it is assumed it travels through the first layer of the target
+   /// @return The energy spread of the beam in keV after traveling in the target and losing LayerDE energy
    double GetStraggling(double En, double InitialEnSpread, double LayerDE, Isotope *Beam, Target *target, int Layer = 0);
 
 private:
+   double GetStraggling(double En, double InitialEnSpread, double LayerDE, Isotope *Beam, Element *TargetEl);
+   /// @brief Get stopping power
+   /// @param En Beam energy for which the stopping power will be calculated
+   /// @param BeamIso Isotope of beam
+   /// @param TargetEl Target element for which the stopping power is calculated
+   /// @return The stopping power in keV per 10^18 atoms/cm2 of the beam isotope in a specific element
+   double GetStopping(double En, Isotope *BeamIso, Element *TargetEl);
    double ZBL_Stopping(double En, Isotope *BeamIso, Element *TargetEl);
    double ZBL_ElectronicStopping(double En, Isotope *BeamIso, Element *TargetEl);
    double ZBL_NuclearStopping(double En, Isotope *BeamIso, Element *TargetEl);

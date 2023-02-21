@@ -33,6 +33,7 @@ void TargetLayer::RemoveElement(Element *el) {
    int i = ElementInLayer(el);
    if (i >= 0)
       TargetElements.erase(TargetElements.begin() + i);
+   CalculateAtomicPercent();
 }
 
 int TargetLayer::ElementInLayer(Element *el) {
