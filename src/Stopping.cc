@@ -19,6 +19,14 @@ struct membuf : std::streambuf {
    }
 };
 
+Stopping *Stopping::StoppingInstance = nullptr;
+
+Stopping *Stopping::GetInstance() {
+   if (!StoppingInstance)
+      StoppingInstance = new Stopping();
+   return StoppingInstance;
+}
+
 Stopping::Stopping() {
    StoppingName = "ZBL";
    ReadZBL_Coeffs();

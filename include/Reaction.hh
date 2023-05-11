@@ -11,6 +11,7 @@
 #include <gsl/gsl_spline.h>
 
 class Isotope;
+class Element;
 class Target;
 class Stopping;
 
@@ -24,7 +25,8 @@ public:
    /// @param reaction Reaction name.
    /// @param Filename Name of r33 file.
    /// @param source Reference.
-   Reaction(int Z, int A, float gEnergy, float gTheta, std::string reaction, std::string Filename, std::string source);
+   //   Reaction(int Z, int A, float gEnergy, float gTheta, std::string reaction, std::string Filename, std::string source);
+
    /// @brief Reaction class constructor.
    /// @param FileName Name of r33 file.
    explicit Reaction(std::filesystem::path FileName);
@@ -46,6 +48,8 @@ public:
    double GetEmin();
    /// Get maximum beam energy of the cross sections
    double GetEmax();
+   /// Get minimum energy step of cross section
+   double GetEnergyMinStep();
    /// Get number of cross sections' points
    int GetNumberOfPoints();
    /// Get reference of the cross sections
@@ -72,15 +76,11 @@ public:
    /**
     * Set variables needed for yield calculation through integration.
     *
-    * @param AtomicPerCent Atomic percentage of the element in the target (0 - 100).
-    * @param AtomicAbundunce Isotopic abundunce of the isotope in the target (0 - 100).
-    * @param Stop Instance of Stopping class for calculating the stopping power.
-    * @param beamiso Instance of Isotope class with beam isotope.
     * @param target Instance of Target class with the specific target.
     * @param layer Layer of the target that the particle navigates.
     *    [optional] If not provided it will be calculated for first layer of the target.
     */
-   void SetIntegratedYield(double AtomicPerCent, double AtomicAbundunce, Stopping *Stop, Isotope *beamiso, Target *target, int layer = 0);
+   void SetIntegratedYield(Target *target, int layer = 0);
    /**
     * Get yield.
     * Calculated as the integral of Factors*CrossSection/Stopping between Emin and Emax
@@ -103,19 +103,19 @@ public:
    void SetIntegrationParameters(double WorkSpaceSize, double epsabs, double epsrel, double epsrelMult);
 
 private:
-   void ReadR33File();
+   void ReadR33File(bool ReadCSs = false);
 
-   int AtomicNumber;
-   int MassNumber = 0;
-   std::string ReactionName;
-   double Theta;
+   Isotope *ReactionBeamIsotope;
+   Isotope *ReactionTargetIsotope;
+   Element *ReactionTargetElement;
+
    std::string FileName;
-   double Egamma;
+   std::string ReactionName;
    std::string Source;
+   double Theta;
+   double Egamma;
 
-   double EnergyFactor;
-   double CrossSectionFactor;
-
+   double ReactionMinEnergyStep = 10000.;
    std::vector<double> CrossSectionEnergy;
    std::vector<double> CrossSection;
 
@@ -127,8 +127,6 @@ private:
    double YieldFunction(double x);
    friend double ReactionYieldWrap(double, void *);
    gsl_integration_workspace *gsl_workspace = nullptr;
-   Stopping *YieldStopping = nullptr;
-   Isotope *BeamIsotope = nullptr;
    Target *YieldTarget = nullptr;
    int YieldTargetLayer = 0;
    double YieldMultFactor;

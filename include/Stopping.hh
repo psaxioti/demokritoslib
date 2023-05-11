@@ -13,14 +13,25 @@
 #include <gsl/gsl_spline.h>
 
 class Stopping {
-public:
+private:
    /**
     * Stopping class constructor.
     *
     * It will read and hold the values needed for the calculation of stopping powers.
     */
    Stopping();
+   static Stopping *StoppingInstance;
+
+public:
    ~Stopping();
+
+   /**
+    * This is the static method that controls the access to the singleton
+    * instance. On the first run, it creates a singleton object and places it
+    * into the static field. On subsequent runs, it returns the client existing
+    * object stored in the static field.
+    */
+   static Stopping *GetInstance();
 
    /// @brief Get stopping power
    /// @param En Beam energy for which the stopping power will be calculated

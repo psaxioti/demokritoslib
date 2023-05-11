@@ -36,7 +36,7 @@ void ReactionList::ReadReactionList() {
    while (ReactionFile >> Z >> A >> E >> th >> No >> Emin >> Emax >> name >> file_name) {
       std::getline(ReactionFile, source, '\n');
 
-      Reactions.push_back(new Reaction(Z, A, E, th, name, file_name, source));
+      Reactions.push_back(new Reaction(file_name));
    }
    ReactionFile.close();
    return;

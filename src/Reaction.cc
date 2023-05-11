@@ -4,18 +4,18 @@
 #include <fstream>
 #include <map>
 
-#include "Isotope.hh"
+#include "MassFunctions.hh"
 #include "Stopping.hh"
 #include "Target.hh"
 
 // const double AVOGADRO = 6.02214141070409084099072e23;
 const double AVOGADRO = 6.02214141070409084099072e12;
 
-Reaction::Reaction(int Z, int A, float gEnergy, float gTheta, std::string reaction, std::string Filename, std::string source)
-    : AtomicNumber(Z), MassNumber(A), Egamma(gEnergy), Theta(gTheta), FileName(Filename),
-      ReactionName(reaction), Source(source) {
-   ReadR33File();
-}
+// Reaction::Reaction(int Z, int A, float gEnergy, float gTheta, std::string reaction, std::string Filename, std::string source)
+//     : AtomicNumber(Z), MassNumber(A), Egamma(gEnergy), Theta(gTheta), FileName(Filename),
+//       ReactionName(reaction), Source(source) {
+//    ReadR33File();
+// }
 
 Reaction::Reaction(std::filesystem::path file) {
    FileName = std::string(file.parent_path()) + "/" + std::string(file.filename());
@@ -32,11 +32,11 @@ Reaction::~Reaction() {
 }
 
 int Reaction::GetAtomicNumber() {
-   return AtomicNumber;
+   return ReactionTargetIsotope->GetZ();
 }
 
 int Reaction::GetMassNumber() {
-   return MassNumber;
+   return ReactionTargetIsotope->GetA();
 }
 
 std::string Reaction::GetReactionName() {
@@ -56,32 +56,54 @@ double Reaction::GetEgamma() {
 }
 
 double Reaction::GetEmin() {
+   if (CrossSection.size() == 0)
+      ReadR33File(true);
    return CrossSectionEnergy[0];
 }
 
 double Reaction::GetEmax() {
+   if (CrossSection.size() == 0)
+      ReadR33File(true);
    return CrossSectionEnergy[GetNumberOfPoints() - 1];
 }
 
+double Reaction::GetEnergyMinStep() {
+   if (CrossSection.size() == 0)
+      ReadR33File(true);
+   return ReactionMinEnergyStep;
+}
+
 int Reaction::GetNumberOfPoints() {
+   if (CrossSection.size() == 0)
+      ReadR33File(true);
    return CrossSectionEnergy.size();
 }
 
 std::string Reaction::GetSource() {
    return Source;
 }
-void Reaction::ReadR33File() {
+
+void Reaction::ReadR33File(bool ReadCSs) {
    if (!ReactionName.empty() && CrossSection.size() > 0)
       return;
    std::ifstream file;
    file.open(FileName);
 
    bool ReadingData = false;
+   static double EnergyFactor;
+   static double CrossSectionFactor;
+
+   int BeamZ, TargetZ;
+   int BeamA, TargetA;
+
    while (!file.eof()) {
       std::string line;
       std::getline(file, line, '\n');
 
-      if (line.substr(0, 8) == "EndData:") {
+      auto div_char = line.find(':');
+      std::string read_val = line.substr(0, div_char);
+
+      if (read_val == "EndData") {
          if (CrossSectionEnergy[0] > CrossSectionEnergy[1]) {
             std::reverse(CrossSectionEnergy.begin(), CrossSectionEnergy.end());
             std::reverse(CrossSection.begin(), CrossSection.end());
@@ -95,57 +117,77 @@ void Reaction::ReadR33File() {
             if (NextNumb < 0. && i == 0)
                continue;
             if (i == 0)
-               CrossSectionEnergy.push_back(stod(line.substr(0, NextDelim + 1)) * EnergyFactor);
+               CrossSectionEnergy.push_back(NextNumb * EnergyFactor);
             if (i == 2) {
-               CrossSection.push_back(stod(line.substr(0, NextDelim + 1)) / CrossSectionFactor);
+               CrossSection.push_back(NextNumb / CrossSectionFactor);
+               if (CrossSectionEnergy.size() > 1) {
+                  double newmin = std::abs(CrossSectionEnergy[CrossSectionEnergy.size() - 1] - CrossSectionEnergy[CrossSectionEnergy.size() - 2]);
+                  ReactionMinEnergyStep = std::min(ReactionMinEnergyStep, newmin);
+               }
             }
             line.erase(0, NextDelim + 1);
          }
-         int kk = CrossSectionEnergy.size();
-         int kk1 = CrossSection.size();
-      } else if (line.substr(0, 5) == "Zeds:") {
-         line.erase(0, line.find(',') + 1);
-         AtomicNumber = std::stoi(line.substr(0, line.find(',')));
-      } else if (line.substr(0, 10) == "Enfactors:") {
-         line.erase(0, line.find(':') + 1);
+      } else if (read_val == "Zeds") {
+         line.erase(0, div_char + 1);
+         for (int i = 0; i < 2; ++i) {
+            auto NextDelim = line.find(',');
+            double NextNumb = stoi(line.substr(0, NextDelim + 1));
+            if (i == 0)
+               BeamZ = NextNumb;
+            else if (i == 1)
+               TargetZ = NextNumb;
+            line.erase(0, NextDelim + 1);
+         }
+      } else if (read_val == "Enfactors") {
+         line.erase(0, div_char + 1);
+         line.erase(0, line.find_first_not_of(' '));
          if (line.empty())
             EnergyFactor = 1.;
          else
             EnergyFactor = stod(line.substr(0, line.find(',') + 1));
-      } else if (line.substr(0, 7) == "Egamma:") {
-         line.erase(0, 8);
+      } else if (read_val == "Egamma") {
+         line.erase(0, div_char + 1);
          Egamma = stod(line);
-      } else if (line.substr(0, 6) == "Theta:") {
-         line.erase(0, 7);
+      } else if (read_val == "Theta") {
+         line.erase(0, div_char + 1);
          Theta = stod(line);
-      } else if (line.substr(0, 9) == "Reaction:") {
-         ReactionName = line.substr(10);
+      } else if (read_val == "Reaction") {
+         ReactionName = line.erase(0, div_char + 1);
          auto first = ReactionName.find_first_not_of(" \t");
          auto last = ReactionName.find_last_not_of(" \t") + 1;
          ReactionName = ReactionName.substr(first, last - first);
-      } else if (line.substr(0, 7) == "Source:") {
-         Source = line.substr(8);
+      } else if (read_val == "Source") {
+         Source = line.erase(0, div_char + 1);
          auto first = Source.find_first_not_of(" \t");
          auto last = Source.find_last_not_of(" \t") + 1;
          Source = Source.substr(first, last - first);
-      } else if (line.substr(0, 6) == "Units:") {
-         line.erase(0, 7);
+      } else if (read_val == "Units") {
+         line.erase(0, div_char + 1);
          if (line.find("mb") != std::string::npos)
             CrossSectionFactor = 1.;
          else if (line.find("tot") != std::string::npos)
             CrossSectionFactor = 4. * M_PI;
          else
             CrossSectionFactor = 0.;
-         //      } else if (line.substr(0, 5) == "Data:" && MassNumber > 0)
-      } else if (line.substr(0, 5) == "Data:")
+      } else if (read_val == "Data" && ReadCSs)
          ReadingData = true;
-      //      else if (line.substr(0, 5) == "Data:" && MassNumber == 0)
-      //         break;
+      else if (read_val == "Data")
+         break;
    }
    file.close();
 
-   MassNumber = stoi(ReactionName.substr(0, ReactionName.find_first_not_of("0123456789")));
-   InitializeInterpolation();
+   TargetA = stoi(ReactionName.substr(0, ReactionName.find_first_not_of("0123456789")));
+   auto firstParam = ReactionName.find('(');
+   auto firstComma = ReactionName.find(',');
+   std::string beam = ReactionName.substr(firstParam + 1, firstComma - firstParam - 1);
+   if (beam == "p")
+      BeamA = 1;
+   else if (beam == "d")
+      BeamA = 2;
+
+   ReactionBeamIsotope = GetIsotope(BeamZ, BeamA);
+   ReactionTargetElement = GetElement(TargetZ);
+   ReactionTargetIsotope = GetIsotope(TargetZ, TargetA);
 }
 
 void Reaction::InitializeInterpolation() {
@@ -166,7 +208,7 @@ void Reaction::InitializeInterpolation() {
 
 double Reaction::GetCrossSection(double En) {
    if (CrossSection.size() == 0)
-      ReadR33File();
+      ReadR33File(true);
 
    if (!acc)
       InitializeInterpolation();
@@ -205,7 +247,7 @@ double ReactionYieldWrap(double z, void *user_data) {
 }
 
 double Reaction::YieldFunction(double En) {
-   double f = YieldMultFactor * GetCrossSection(En) / YieldStopping->GetStopping(En, BeamIsotope, YieldTarget, YieldTargetLayer);
+   double f = YieldMultFactor * GetCrossSection(En) / Stopping::GetInstance()->GetStopping(En, ReactionBeamIsotope, YieldTarget, YieldTargetLayer);
    return f;
 }
 
@@ -221,12 +263,10 @@ void Reaction::SetIntegrationParameters(double WorkSpaceSize, double epsabs, dou
    return;
 }
 
-void Reaction::SetIntegratedYield(double AtomicPerCent, double AtomicAbundunce, Stopping *Stop, Isotope *beamiso, Target *target, int layer) {
-   YieldStopping = Stop;
-   BeamIsotope = beamiso;
+void Reaction::SetIntegratedYield(Target *target, int layer) {
    YieldTarget = target;
    YieldTargetLayer = layer;
-   YieldMultFactor = AVOGADRO * AtomicPerCent * AtomicAbundunce / 10000.;
+   YieldMultFactor = AVOGADRO * YieldTarget->GetElementAtomicPercentInLayer(ReactionTargetElement, layer) * ReactionTargetIsotope->GetAbundance() / 10000.;
    YieldMultFactor *= (1e-27 * 1e15 * 1000);
 
    SetIntegrationParameters(IntegrationWorkspaceSize, IntegrationepsabsDefault, IntegrationepsrelDefault, IntegrationEpsRelMultFactor);
