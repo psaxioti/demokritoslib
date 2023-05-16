@@ -29,6 +29,11 @@ void TargetLayer::AddElement(Element *el, double atomic_percent) {
    CalculateAtomicPercent();
 }
 
+void TargetLayer::SetElement(int Index, Element *el) {
+   if (Index < TargetElements.size() && ElementInLayer(el) < 0)
+      TargetElements[Index]->SetElement(el);
+}
+
 void TargetLayer::RemoveElement(Element *el) {
    int i = ElementInLayer(el);
    if (i >= 0)
@@ -79,4 +84,30 @@ void TargetLayer::CalculateAtomicPercent() {
    LayerAtomicPerCent = 0.;
    for (std::size_t i = 0; i < TargetElements.size(); ++i)
       LayerAtomicPerCent += TargetElements[i]->GetAtomicPercent();
+}
+
+void TargetLayer::LinkElements(Element *element, Element *LinkedElement, float linkfactor) {
+   int i = ElementInLayer(element);
+   int iLinked = ElementInLayer(LinkedElement);
+   if (i < 0 || iLinked < 0)
+      return;
+   TargetElements[i]->LinkElement(TargetElements[iLinked], linkfactor);
+   TargetElements[iLinked]->SetLinkedByElement(TargetElements[i], linkfactor);
+}
+
+void TargetLayer::UnlinkElements(Element *element, Element *LinkedElement) {
+   int i = ElementInLayer(element);
+   int iLinked = ElementInLayer(LinkedElement);
+   if (i < 0 || iLinked < 0)
+      return;
+   TargetElements[i]->UnlinkElement(TargetElements[iLinked]);
+   TargetElements[iLinked]->RemoveLinkedByElement(TargetElements[i]);
+}
+
+std::map<Element *, std::map<Element *, double>> TargetLayer::GetLinkedElementsAndFactors() {
+   std::map<Element *, std::map<Element *, double>> elmap;
+   elmap.clear();
+   for (int i = 0; i < TargetElements.size(); ++i)
+      elmap[TargetElements[i]->GetElement()] = TargetElements[i]->GetLinkedElementsAndFactors();
+   return elmap;
 }

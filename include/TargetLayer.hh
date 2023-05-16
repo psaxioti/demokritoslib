@@ -1,6 +1,7 @@
 #ifndef TARGET_LAYER_H
 #define TARGET_LAYER_H 1
 
+#include <map>
 #include <vector>
 
 #include "FitStateEnum.hh"
@@ -20,6 +21,7 @@ private:
 
    std::vector<Element *> GetLayerElements();
    void AddElement(Element *el, double atomic_percent = 100.);
+   void SetElement(int Index, Element *el);
    void RemoveElement(Element *el);
 
    void SetElementAtomicPercent(Element *el, double atomic_percent);
@@ -29,6 +31,10 @@ private:
    FitState GetElementFitState(Element *el);
 
    double GetLayerAtomicPerCent();
+
+   void LinkElements(Element *element, Element *LinkedElement, float linkfactor);
+   void UnlinkElements(Element *element, Element *LinkedElement);
+   std::map<Element *, std::map<Element *, double>> GetLinkedElementsAndFactors();
 
 private:
    int ElementInLayer(Element *el);

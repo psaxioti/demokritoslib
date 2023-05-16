@@ -46,7 +46,7 @@ public:
    /// @param Stopping Can be either ZBL or SRIM.
    ///   Default is ZBL.
    ///   If parameters for the specific beam-target compination are missing the ZBL will be used.
-   void SetStopping(std::string &Stopping);
+   void SetStopping(const std::string &Stopping);
 
    /// @brief Calulate energy spread after traveling a target layer that absorbes energy LayerDE
    /// @param En Initial mean energy of beam in keV

@@ -1,6 +1,7 @@
 #ifndef TARGET_H
 #define TARGET_H 1
 
+#include <map>
 #include <vector>
 
 #include "FitStateEnum.hh"
@@ -30,6 +31,8 @@ public:
    /// @brief Remove layer from target
    /// @param Layer Layer number to remove. If none given the first layer will be removed
    void RemoveLayer(int Layer = 0);
+   /// @brief Remove all layers from Target
+   void Clear();
 
    /// @brief Set thickness of layer
    /// @param Thickness Thickness of the layer
@@ -44,6 +47,11 @@ public:
    /// @param el Element to add
    /// @param Layer Layer at which the element will be added. Default is first layer of target
    void AddElementToLayer(Element *el, int Layer = 0);
+   /// @brief Changes the element of index to a new one
+   /// @param ElementIndex Index of element in layer
+   /// @param el New element to be set
+   /// @param Layer Layer at which the element will be added. Default is first layer of target
+   void ChangeElementInLayer(int ElementIndex, Element *el, int Layer = 0);
    /// @brief Remove element from a layer
    /// @param el Element to remove
    /// @param Layer Layer from which the element will be removed. Default is first layer of target
@@ -75,6 +83,11 @@ public:
 
    void SetElementFitStateInLayer(Element *el, FitState FitState, int Layer = 0);
    FitState GetElementFitStateInLayer(Element *el, int Layer = 0);
+
+   void LinkElementsInLayer(Element *element, Element *LinkedElement, float linkfactor = 1, int Layer = 0);
+   void SetLinkFactorInLayer(Element *element, Element *LinkedElement, float linkfactor, int Layer = 0);
+   void UnlinkElementsInLayer(Element *element, Element *LinkedElement, int Layer = 0);
+   std::map<Element *, std::map<Element *, double>> GetLinkedElementsAndFactorsInLayer(int Layer = 0);
 
 private:
    std::vector<TargetLayer *> TargetLayers;

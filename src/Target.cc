@@ -14,19 +14,29 @@ void Target::AddLayer(double Thickness) {
 }
 
 void Target::InsertLayer(int PreviousLayer, double Thickness) {
-   TargetLayers.insert(TargetLayers.begin() + PreviousLayer + 1, new TargetLayer(Thickness));
+   if (PreviousLayer++ <= TargetLayers.size())
+      TargetLayers.insert(TargetLayers.begin() + PreviousLayer, new TargetLayer(Thickness));
 }
 
 void Target::RemoveLayer(int Layer) {
-   TargetLayers.erase(TargetLayers.begin() + Layer);
+   if (Layer < TargetLayers.size())
+      TargetLayers.erase(TargetLayers.begin() + Layer);
+}
+
+void Target::Clear() {
+   for (int i = 0; i < TargetLayers.size(); ++i)
+      RemoveLayer(i);
 }
 
 void Target::SetLayerThickness(double Thickness, int Layer) {
-   TargetLayers[Layer]->SetThickness(Thickness);
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->SetThickness(Thickness);
 }
 
 double Target::GetLayerThickness(int Layer) {
-   return TargetLayers[Layer]->GetThickness();
+   if (Layer < TargetLayers.size())
+      return TargetLayers[Layer]->GetThickness();
+   return 0.;
 }
 
 void Target::AddElementToLayer(Element *el, int Layer) {
@@ -35,8 +45,14 @@ void Target::AddElementToLayer(Element *el, int Layer) {
    TargetLayers[Layer]->AddElement(el);
 }
 
+void Target::ChangeElementInLayer(int ElementIndex, Element *el, int Layer) {
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->SetElement(ElementIndex, el);
+}
+
 void Target::RemoveElementFromLayer(Element *el, int Layer) {
-   TargetLayers[Layer]->RemoveElement(el);
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->RemoveElement(el);
 }
 
 bool Target::ElementExistsInLayer(Element *el, int Layer) {
@@ -47,28 +63,57 @@ bool Target::ElementExistsInLayer(Element *el, int Layer) {
 }
 
 std::vector<Element *> Target::GetElementsInLayer(int Layer) {
-   return TargetLayers[Layer]->GetLayerElements();
+   if (Layer < TargetLayers.size())
+      return TargetLayers[Layer]->GetLayerElements();
+   std::vector<Element *> elvec;
+   return elvec;
 }
 
 void Target::SetElementAtomicPercentInLayer(Element *el, double AtomicPercent, int Layer) {
-   TargetLayers[Layer]->SetElementAtomicPercent(el, AtomicPercent);
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->SetElementAtomicPercent(el, AtomicPercent);
 }
 
 double Target::GetElementAtomicPercentInLayer(Element *el, int Layer) {
-   return TargetLayers[Layer]->GetElementAtomicPercent(el);
+   if (Layer < TargetLayers.size())
+      return TargetLayers[Layer]->GetElementAtomicPercent(el);
+   return 0.;
 }
 
 void Target::SetElementFitStateInLayer(Element *el, FitState FitState, int Layer) {
-   TargetLayers[Layer]->SetElementFitState(el, FitState);
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->SetElementFitState(el, FitState);
 }
 
 FitState Target::GetElementFitStateInLayer(Element *el, int Layer) {
-   return TargetLayers[Layer]->GetElementFitState(el);
+   if (Layer < TargetLayers.size())
+      return TargetLayers[Layer]->GetElementFitState(el);
+   return FitState::Free;
 }
 
 double Target::GetLayerAtomicPerCent(int Layer) {
    if (Layer < TargetLayers.size())
       return TargetLayers[Layer]->GetLayerAtomicPerCent();
-   else
-      return 0.;
+   return 0.;
+}
+
+void Target::LinkElementsInLayer(Element *element, Element *LinkedElement, float linkfactor, int Layer) {
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->LinkElements(element, LinkedElement, linkfactor);
+}
+
+void Target::SetLinkFactorInLayer(Element *element, Element *LinkedElement, float linkfactor, int Layer) {
+   LinkElementsInLayer(element, LinkedElement, linkfactor, Layer);
+}
+
+void Target::UnlinkElementsInLayer(Element *element, Element *LinkedElement, int Layer) {
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->UnlinkElements(element, LinkedElement);
+}
+
+std::map<Element *, std::map<Element *, double>> Target::GetLinkedElementsAndFactorsInLayer(int Layer) {
+   if (Layer < TargetLayers.size())
+      TargetLayers[Layer]->GetLinkedElementsAndFactors();
+   std::map<Element *, std::map<Element *, double>> elmap;
+   return elmap;
 }

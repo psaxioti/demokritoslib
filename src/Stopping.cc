@@ -55,7 +55,7 @@ double Stopping::GetStopping(double En, Isotope *BeamIso, Target *target, int La
    return (StoppingSum / target->GetLayerAtomicPerCent(Layer));
 }
 
-void Stopping::SetStopping(std::string &Stopping) {
+void Stopping::SetStopping(const std::string &Stopping) {
    if (Stopping == "ZBL" || Stopping == "SRIM")
       StoppingName = Stopping;
 }
