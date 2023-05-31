@@ -1,6 +1,6 @@
 #include "Isotope.hh"
 
-static double amu_to_kev = 931494.;
+static double amu_to_kev = 931494.061;
 
 Isotope::Isotope(int Z, int N, std::string Symb, double mass, double Abund, double massexc) : AtomicNumber(Z), NeutronNumber(N), Mass(mass), Abundance(Abund), NaturalAbundance(Abund) {
    Symbol = std::to_string(AtomicNumber + NeutronNumber) + Symb;

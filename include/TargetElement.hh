@@ -12,7 +12,7 @@ class TargetElement {
    friend double GetLinkedByAtomicPercent(double val, const std::map<TargetElement *, double>::value_type &map);
 
 private:
-   TargetElement(Element *el = nullptr, double atomic_percent = 100.);
+   TargetElement(Element *el = nullptr, double atomic_percent = 1.);
    ~TargetElement();
 
    void SetFitState(FitState NewFitState);

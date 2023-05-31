@@ -33,9 +33,19 @@ public:
    ~Reaction();
 
    /// Get Atomic number of reaction's target
-   int GetAtomicNumber();
+   int GetTargetAtomicNumber();
    /// Get Mass number of reaction's target
-   int GetMassNumber();
+   int GetTargetMassNumber();
+   /// Get reaction's target isotope
+   Isotope *GetTargetIsotope();
+   /// Get reaction's target element
+   Element *GetTargetElement();
+   /// Get Atomic number of reaction's beam
+   int GetBeamAtomicNumber();
+   /// Get Mass number of reaction's beam
+   int GetBeamMassNumber();
+   /// Get reaction's beam isotope
+   Isotope *GetBeamIsotope();
    /// Get name of reaction
    std::string GetReactionName();
    /// Get theta angle of emmited gamma
@@ -58,9 +68,21 @@ public:
    /// Get cross section for energy En (keV)
    // Linear interpolation of the cross section points, 0. outside the energy range
    double GetCrossSection(double En);
-   /// Get cross section for energy En (keV) convoluted with a gaussian of sigma
-   // The convolution is done by arithmetic sum at the moment!!!
+
+   /// @brief Get cross section convoluted with a gaussian
+   /// @param En Central energy of the cross section
+   /// @param sigma Sigma of the gaussian
+   /// @return Convolution of the cross section at the specified energy with the given sigma
    double GetStragglingCrossSection(double En, double sigma);
+
+   /// @brief Get cross section convoluted with a gaussian
+   /// @param En Central energy of the cross section
+   /// @param InitialBeamEnergy Initial Beam energy. Has to be greater than En
+   /// @param InitialBeamEnegySpread Initial energy spread of the beam energy
+   /// @param target Target in which the beam travels
+   /// @return Convolution of the cross section at the specified energy with sigma calculated from the straggling of the beam in the target
+   double GetStragglingCrossSection(double En, double InitialBeamEnergy, double InitialBeamEnegySpread, Target *target);
+
    /**
     * Get yield.
     * Calculated as the simple calculation of Factors*CrossSection*dE/Stopping
@@ -73,34 +95,36 @@ public:
     *    It is advised to give it for the same En energy
     */
    double GetYield(double En, double dE, double AtomicPerCent, double AtomicAbundunce, double Stopping);
-   /**
-    * Set variables needed for yield calculation through integration.
-    *
-    * @param target Instance of Target class with the specific target.
-    * @param layer Layer of the target that the particle navigates.
-    *    [optional] If not provided it will be calculated for first layer of the target.
-    */
-   void SetIntegratedYield(Target *target, int layer = 0);
-   /**
-    * Get yield.
-    * Calculated as the integral of Factors*CrossSection/Stopping between Emin and Emax
-    *
-    * @param Emin Lower limit of the integration.
-    * @param Emax Upper limit of the integration.
-    * @param error Returns the absolute estimated error of the integration.
-    * @param epsrel Returns the epsrel used for the integration.
-    */
-   double GetIntegratedYield(double Emin, double Emax, double &error, double &epsrel);
-   /**
-    * Set gsl Integration parameters. The algorithm used is QAG with key 5
-    *
-    * @param WorkSpaceSize Sets the size of the workspace. To the same value the limit is also set.
-    *    Default value is 10000
-    * @param epsabs Sets epsabs value. Default is 0.
-    * @param epsrel Sets epsrel initial value. Default is 1e-3.
-    * @param epsrelMult Sets multiplication factor to change epsrel if no convergeance is reached.
-    */
-   void SetIntegrationParameters(double WorkSpaceSize, double epsabs, double epsrel, double epsrelMult);
+
+   /// @brief Get yield.
+   /// Calculated as the integral of Factors*CrossSection/Stopping between Emin and Emax.
+   /// @param Emin Lower limit of the integration. If Emin is lower than the stopping power in the target, then the yield in the Layer will be calculated.
+   /// @param Emax Upper limit of the integration. Considered as beam energy.
+   /// @param error Returns the absolute estimated error of the integration.
+   /// @param epsrel Returns the epsrel used for the integration.
+   /// @param target Target in which the beam travels
+   /// @return Yield
+   double GetYield(double Emin, double Emax, double &error, double &epsrel, Target *target);
+
+   /// @brief Get yield.
+   /// Calculated as the integral of Factors*CrossSection/Stopping between Emin and InitialBeamEnergy.
+   /// Straggling is also considered
+   /// @param Emin Lower limit of the integration. If Emin is lower than the stopping power in the target, then the yield in the Layer will be calculated.
+   /// @param InitialBeamEnergy Initial Beam energy. Has to be greater than Emin
+   /// @param InitialBeamEnegySpread Initial energy spread of the beam energy
+   /// @param error Returns the absolute estimated error of the integration.
+   /// @param epsrel Returns the epsrel used for the integration.
+   /// @param target Target in which the beam travels
+   /// @return Yield
+   double GetYield(double Emin, double InitialBeamEnergy, double InitialBeamEnegySpread, double &error, double &epsrel, Target *target);
+
+   /// @brief Set gsl Integration parameters. The algorithm used is QAG with default key 5
+   /// @param WorkSpaceSize Sets the size of the workspace. To the same value the limit is also set. Default value is 10000
+   /// @param epsabs Sets epsabs value. Default is 0.
+   /// @param epsrel Sets epsrel initial value. Default is 1e-6.
+   /// @param epsrelMult Sets multiplication factor to change epsrel if no convergeance is reached.
+   /// @param QAG_Key Sets the QAG algorithm key. Default is 5.
+   void SetIntegrationParameters(double WorkSpaceSize = 10000, double epsabs = 0, double epsrel = 1.e-6, double epsrelMult = 3, int QAG_Key = 5);
 
 private:
    void ReadR33File(bool ReadCSs = false);
@@ -119,21 +143,37 @@ private:
    std::vector<double> CrossSectionEnergy;
    std::vector<double> CrossSection;
 
+   // Functions/Parameters relative to cross section interpolation
    void InitializeInterpolation();
+   gsl_interp_accel *CS_InterpolationAccellerator = nullptr;
+   gsl_spline *CS_InterpolationSpline = nullptr;
 
-   gsl_interp_accel *acc = nullptr;
-   gsl_spline *spline = nullptr;
+   // General integration Parameters
+   int IntegrationWorkspaceSize = 10000;
+   double IntegrationepsabsDefault = 0.;
+   double IntegrationepsrelDefault = 1e-6;
+   double IntegrationEpsRelMultFactor = 3.;
+   int QAGIntegrationKey = 5;
 
+   void SetIntegratedYield(Target *target, int layer = 0, double sigma = 0);
    double YieldFunction(double x);
    friend double ReactionYieldWrap(double, void *);
-   gsl_integration_workspace *gsl_workspace = nullptr;
+   gsl_integration_workspace *YieldIntegrationWorkspace = nullptr;
    Target *YieldTarget = nullptr;
    int YieldTargetLayer = 0;
    double YieldMultFactor;
-   int IntegrationWorkspaceSize = 10000;
-   double IntegrationepsabsDefault = 0.;
-   double IntegrationepsrelDefault = 1e-3;
-   double IntegrationEpsRelMultFactor = 3.;
+   double YieldEnergySigma = 0;
+
+   double StragglingYieldFunction(double x);
+   friend double StragglingReactionYieldWrap(double, void *);
+   void SetStragglingParameters(double En, double sigma);
+   void SetSIntegratedYield(Target *target, int layer, double ein, double sigma);
+   double StragglingCrossSection(double E);
+   friend double StragglingCrossSectionWrap(double z, void *user_data);
+   gsl_integration_workspace *StragglingIntegrationWorkspace = nullptr;
+   double StragglingEin;
+   double StragglingEn;
+   double StragglingSigma;
 };
 
 #endif

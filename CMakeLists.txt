@@ -32,7 +32,7 @@ function(add_resource input)
   add_custom_command(
       DEPENDS ${res_with_null_output}
       OUTPUT ${output}
-      COMMAND ${CMAKE_LINKER} --relocatable --format binary --output ${output} ${input}
+      COMMAND ${CMAKE_LINKER} -z noexecstack --relocatable --format binary --output ${output} ${input}
       WORKING_DIRECTORY ${res_intermediate_dir}
   )
   set(RC_DEPENDS ${RC_DEPENDS} ${output} PARENT_SCOPE)
@@ -92,6 +92,7 @@ set(RC_DEPENDS "")
 add_resource("data/scoef.95a")
 add_resource("data/scoef.95b")
 add_resource("data/srim.txt")
+add_resource("data/chu.dat")
 
 add_library(demstopping ${LINKING_TYPE}
    src/Stopping.cc

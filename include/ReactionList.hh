@@ -18,6 +18,22 @@ public:
    std::string GetR33Folder();
    /// Sets the folder with the r33 files.
    void SetR33Folder(std::string NewR33Folder);
+   /// @brief Force recreation of reactions list DB file
+   void RecreateList();
+
+   /// @brief Get the complete reaction list of files in set folder
+   /// @return Vector of reactions
+   const std::vector<Reaction *> GetReactionList();
+   /// @brief Get a subset of reactions for specific beam isotope and target isotope
+   /// @param BeamIsotope isotope of the beam
+   /// @param TargetIsotope isotope of target
+   /// @return Vector of reactions for the specified reaction
+   const std::vector<Reaction *> GetFilteredReactionList(Isotope *BeamIsotope, Isotope *TargetIsotope);
+   /// @brief Get a subset of reactions for specific beam isotope and target element
+   /// @param BeamIsotope isotope of the beam
+   /// @param TargetElement element of target
+   /// @return Vector of reactions for the specified reaction
+   const std::vector<Reaction *> GetFilteredReactionList(Isotope *BeamIsotope, Element *TargetElement);
 
 private:
    std::string R33Folder;

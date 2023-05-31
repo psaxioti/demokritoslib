@@ -23,7 +23,7 @@ public:
 
    /// @brief Add a layer to the target
    /// @param Thickness Thicknes of the layer. Default is 100
-   void AddLayer(double Thickness = 100);
+   void AddLayer(double Thickness = 1.E18);
    /// @brief Insert layer
    /// @param PreviousLayer Layer after which the new layer will be created
    /// @param Thickness Thickness of the layer
@@ -33,6 +33,8 @@ public:
    void RemoveLayer(int Layer = 0);
    /// @brief Remove all layers from Target
    void Clear();
+   /// @brief Get the number of layers of the target
+   int GetNumberOfLayers() { return TargetLayers.size(); }
 
    /// @brief Set thickness of layer
    /// @param Thickness Thickness of the layer
