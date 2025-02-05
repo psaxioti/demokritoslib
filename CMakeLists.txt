@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_C_COMPILER   /usr/bin/gcc)
-set(CMAKE_CXX_COMPILER /usr/bin/g++)
 
 project(demokritos VERSION 1.0)
 
@@ -69,10 +67,11 @@ add_library(demmasses ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-set(headers include/MassFunctions.hh include/Element.hh include/Isotope.hh)
-install(TARGETS demmasses LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
-
+target_sources(demmasses PUBLIC FILE_SET HEADERS FILES include/MassFunctions.hh include/Element.hh include/Isotope.hh)
+install(TARGETS demmasses
+    LIBRARY
+    FILE_SET HEADERS
+)
 
 set(RC_DEPENDS "")
 
@@ -82,11 +81,11 @@ add_library(demreaction ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-set(headers include/Reaction.hh include/ReactionList.hh)
-install(TARGETS demreaction DESTINATION ${CMAKE_INSTALL_LIBDIR})
-#target_link_libraries(demreaction ${GSL_LIBRARIES})
-install(TARGETS demreaction LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+target_sources(demreaction PUBLIC FILE_SET HEADERS FILES include/Reaction.hh include/ReactionList.hh)
+install(TARGETS demreaction
+    LIBRARY
+    FILE_SET HEADERS
+)
 
 set(RC_DEPENDS "")
 add_resource("data/scoef.95a")
@@ -99,11 +98,11 @@ add_library(demstopping ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-set(headers include/Stopping.hh)
-install(TARGETS demstopping DESTINATION ${CMAKE_INSTALL_LIBDIR})
-#target_link_libraries(demreaction ${GSL_LIBRARIES})
-install(TARGETS demstopping LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+target_sources(demstopping PUBLIC FILE_SET HEADERS FILES include/Stopping.hh)
+install(TARGETS demstopping
+    LIBRARY
+    FILE_SET HEADERS
+)
 
 set(RC_DEPENDS "")
 
@@ -114,8 +113,26 @@ add_library(demtarget ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-set(headers include/Target.hh include/FitStateEnum.hh)
-install(TARGETS demtarget DESTINATION ${CMAKE_INSTALL_LIBDIR})
-#target_link_libraries(demreaction ${GSL_LIBRARIES})
-install(TARGETS demtarget LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+target_sources(demtarget PUBLIC FILE_SET HEADERS FILES include/Target.hh include/FitStateEnum.hh)
+install(TARGETS demtarget
+    LIBRARY
+    FILE_SET HEADERS
+)
+
+# set(THREADS_PREFER_PTHREAD_FLAG ON)
+# find_package(Threads REQUIRED)
+# set (CMAKE_CXX_STANDARD 11)
+
+# set(RC_DEPENDS "")
+
+# add_library(demthreadpool ${LINKING_TYPE}
+#    src/ThreadPool.cc
+#    ${RC_DEPENDS}
+# )
+
+# target_sources(demthreadpool PUBLIC FILE_SET HEADERS FILES include/ThreadPool.hh)
+# target_link_libraries(demthreadpool ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_PTHREAD_LIBS_INIT})
+# install(TARGETS demthreadpool
+#     LIBRARY
+#     FILE_SET HEADERS
+# )

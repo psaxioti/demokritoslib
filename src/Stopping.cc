@@ -91,7 +91,7 @@ double Stopping::ZBL_ElectronicStopping(double En, Isotope *BeamIso, Element *Ta
    double stopping = 0.;
    // Have to implement something better
    // Just added it here very roughly
-   double effectivecharge = BeamIso->GetZ();
+   double effectivecharge = BeamIso->GetZ() * BeamIso->GetZ();
    if (EnPerMass <= 10.) {
       double y = (TargetEl->GetZ() > 6) ? 0.45 : 0.35;
       stopping = ZBL_ElectronicStopping(10. * BeamIso->GetMass(), BeamIso, TargetEl) * std::pow(EnPerMass / 10., y);
@@ -443,11 +443,9 @@ double Stopping::CalculateStraggling(double Ein, double s0, double Eout, Isotope
 
    while (curE >= Eout + de) {
       s = GetDEStraggling(curE, s, de, Beam, target, Layer);
+      if (curE - de < Eout + de && curE > Eout + de)
+         de = curE - Eout - de;
       curE -= de;
-      //      if (curE < Eout + de && curE > Eout) {
-      //         curE += de;
-      //         de = curE - Eout;
-      //      }
    }
    return s;
 }

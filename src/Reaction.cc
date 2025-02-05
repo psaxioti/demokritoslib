@@ -315,6 +315,10 @@ void Reaction::SetIntegrationParameters(double WorkSpaceSize, double epsabs, dou
       YieldIntegrationWorkspace = gsl_integration_workspace_alloc(IntegrationWorkspaceSize);
       gsl_integration_workspace_free(StragglingIntegrationWorkspace);
       StragglingIntegrationWorkspace = gsl_integration_workspace_alloc(IntegrationWorkspaceSize);
+      gsl_integration_workspace_free(YieldCalculationWorkspace);
+      YieldCalculationWorkspace = gsl_integration_workspace_alloc(IntegrationWorkspaceSize);
+      gsl_integration_workspace_free(StragglingCrossSectionOverStoppingWorkspace);
+      StragglingCrossSectionOverStoppingWorkspace = gsl_integration_workspace_alloc(IntegrationWorkspaceSize);
    }
    IntegrationepsabsDefault = epsabs;
    IntegrationepsrelDefault = epsrel;
@@ -363,28 +367,6 @@ double Reaction::GetYield(double Emin, double Emax, double &error, double &epsre
 
    SetIntegratedYield(target);
 
-   /////////////////////////////////////////////////////////////////////////////////////////////
-
-   // std::vector<double> CrossSectionOverStopping;
-   // CrossSectionOverStopping.clear();
-   // for (size_t i = 0; i < CrossSection.size(); ++i)
-   //    CrossSectionOverStopping.push_back(CrossSection[i] / Stopping::GetInstance()->GetStopping(CrossSectionEnergy[i], ReactionBeamIsotope, YieldTarget, YieldTargetLayer));
-   // double *x = &CrossSectionEnergy[0];
-   // double *y = &CrossSectionOverStopping[0];
-   // auto CSoverStopping_InterpolationAccellerator = gsl_interp_accel_alloc();
-   // auto CSoverStopping_InterpolationSpline = gsl_spline_alloc(gsl_interp_linear, CrossSection.size());
-   // //   CS_InterpolationSpline = gsl_spline_alloc(gsl_interp_cspline, CrossSection.size());
-   // //   CS_InterpolationSpline = gsl_spline_alloc(gsl_interp_akima, CrossSection.size());
-   // //   CS_InterpolationSpline = gsl_spline_alloc(gsl_interp_steffen, CrossSection.size());
-
-   // gsl_spline_init(CSoverStopping_InterpolationSpline, x, y, CrossSection.size());
-   // double int_result = gsl_spline_eval_integ(CSoverStopping_InterpolationSpline, Emin, Emax, CSoverStopping_InterpolationAccellerator);
-   // gsl_spline_free(CSoverStopping_InterpolationSpline);
-   // gsl_interp_accel_free(CSoverStopping_InterpolationAccellerator);
-   // return YieldMultFactor * int_result;
-
-   /////////////////////////////////////////////////////////////////////////////////////////////
-
    gsl_function F;
    F.function = &ReactionYieldWrap;
    F.params = (void *)this;
@@ -405,41 +387,164 @@ double Reaction::GetYield(double Emin, double Emax, double &error, double &epsre
    return result;
 }
 
+// double Reaction::GetYield(double Emin, double Emax, double InitialBeamEnegySpread, double &error, double &epsrel, Target *target) {
+//    if (Emax < GetEmin() ||
+//        Emax < Emin)
+//       return 0.;
+
+//    Emin = std::max(Emin, GetEmin());
+//    Emax = std::min(Emax, GetEmax());
+
+//    SetSIntegratedYield(target, 0, Emax, InitialBeamEnegySpread);
+
+//    gsl_function F;
+//    F.function = &StragglingReactionYieldWrap;
+//    F.params = (void *)this;
+
+//    epsrel = IntegrationepsrelDefault / IntegrationEpsRelMultFactor;
+
+//    int status = 1;
+//    gsl_set_error_handler_off();
+//    double result;
+//    while (status) {
+//       epsrel *= IntegrationEpsRelMultFactor;
+//       //      status = gsl_integration_qags(&F, CrossSectionEnergy[0], En,
+//       //                                    epsabs, epsrel, limit, gsl_workspace, &result, &error);
+//       status = gsl_integration_qag(&F, Emin, Emax,
+//                                    IntegrationepsabsDefault, epsrel, IntegrationWorkspaceSize, QAGIntegrationKey,
+//                                    YieldIntegrationWorkspace, &result, &error);
+//       //      status = gsl_integration_qags(&F, Emin, Emax,
+//       //                                    IntegrationepsabsDefault, epsrel, IntegrationWorkspaceSize,
+//       //                                    YieldIntegrationWorkspace, &result, &error);
+//       //   auto work = gsl_integration_romberg_alloc(20);
+//       //   size_t nevals = 0;
+//       //   status = gsl_integration_romberg(&F, Emin, Emax,
+//       //                                    IntegrationepsabsDefault, epsrel,
+//       //                                    &result, &nevals, work);
+//       //   gsl_integration_romberg_free(work);
+//    }
+//    return result;
+// }
+
+void Reaction::SetYieldCalculationParameters(Target *target, int layer, double ein, double sigma) {
+   YieldCalculationTarget = target;
+   YieldCalculationLayer = layer;
+   YieldCalculationMultFactor = target->GetElementAtomicPercentInLayer(ReactionTargetElement, layer) * ReactionTargetIsotope->GetAbundance();
+   YieldCalculationMultFactor /= (1.E19 * GSL_CONST_MKSA_ELECTRON_CHARGE);
+   YieldCalculationInitialSigma = sigma;
+   YieldCalculationEin = ein;
+
+   SetIntegrationParameters(IntegrationWorkspaceSize, IntegrationepsabsDefault, IntegrationepsrelDefault, IntegrationEpsRelMultFactor, QAGIntegrationKey);
+}
+
+double Reaction::YieldCalculation(double En) {
+   double CSoverStopping;
+   if (YieldCalculationInitialSigma < 0)
+      CSoverStopping = GetCrossSection(En) /
+                       Stopping::GetInstance()->GetStopping(
+                           En, ReactionBeamIsotope, YieldCalculationTarget, YieldCalculationLayer);
+   else {
+      double sigma = Stopping::GetInstance()->GetStraggling(
+          YieldCalculationEin, YieldCalculationInitialSigma, En,
+          ReactionBeamIsotope, YieldCalculationTarget, YieldCalculationLayer);
+      // CSoverStopping = GetStragglingCrossSection(En, sigma) /
+      //                  Stopping::GetInstance()->GetStopping(
+      //                      En, ReactionBeamIsotope, YieldCalculationTarget, YieldCalculationLayer);
+      CSoverStopping = GetStragglingCrossSectionOverStopping(En, sigma);
+   }
+   return YieldCalculationMultFactor * CSoverStopping;
+}
+
+double YieldCalculationWrap(double En, void *user_data) {
+   Reaction *this_ptr = (Reaction *)user_data;
+   return this_ptr->YieldCalculation(En);
+}
+
+double StragglingCrossSectionOverStoppingWrap(double z, void *user_data) {
+   Reaction *this_ptr = (Reaction *)user_data;
+   return this_ptr->StragglingCrossSectionOverStopping(z);
+}
+
+double Reaction::StragglingCrossSectionOverStopping(double En) {
+   double f = (1 / (YieldCalculationCurrentSigma * sqrt(2 * M_PI))) * exp(-pow((En - YieldCalculationCurrentE), 2) / (2 * pow(YieldCalculationCurrentSigma, 2)));
+   f *= GetCrossSection(En);
+   f /= Stopping::GetInstance()->GetStopping(En, ReactionBeamIsotope, YieldCalculationTarget, YieldCalculationLayer);
+   return f;
+}
+
+double Reaction::GetStragglingCrossSectionOverStopping(double En, double sigma) {
+   if (sigma == 0.)
+      return GetCrossSection(En);
+
+   gsl_function F;
+
+   YieldCalculationCurrentE = En;
+   YieldCalculationCurrentSigma = sigma;
+   SetIntegrationParameters(IntegrationWorkspaceSize, IntegrationepsabsDefault, IntegrationepsrelDefault, IntegrationEpsRelMultFactor, QAGIntegrationKey);
+
+   F.function = &StragglingCrossSectionOverStoppingWrap;
+   F.params = (double *)this;
+
+   double result;
+   double error;
+   // gsl_integration_qag(&F, En - (100 * sigma), En + (100 * sigma),
+   //                     IntegrationepsabsDefault, IntegrationepsrelDefault, IntegrationWorkspaceSize, QAGIntegrationKey,
+   //                     StragglingCrossSectionOverStoppingWorkspace, &result, &error);
+   gsl_integration_qag(&F, En - (10 * sigma), En + (10 * sigma),
+                       0., 1.e-9, 10000, 1,
+                       StragglingCrossSectionOverStoppingWorkspace, &result, &error);
+
+   return result;
+
+   //   return result / Stopping::GetInstance()->GetStopping(En, ReactionBeamIsotope, YieldCalculationTarget, YieldCalculationLayer);
+}
+
 double Reaction::GetYield(double Emin, double Emax, double InitialBeamEnegySpread, double &error, double &epsrel, Target *target) {
    if (Emax < GetEmin() ||
-       Emax < Emin)
+       Emax < Emin ||
+       (Emin == Emax && InitialBeamEnegySpread <= 0.))
       return 0.;
 
    Emin = std::max(Emin, GetEmin());
    Emax = std::min(Emax, GetEmax());
 
-   SetSIntegratedYield(target, 0, Emax, InitialBeamEnegySpread);
+   double yield = 0.;
 
-   gsl_function F;
-   F.function = &StragglingReactionYieldWrap;
-   F.params = (void *)this;
+   for (int Layer = 0; Layer < target->GetNumberOfLayers(); ++Layer) {
+      double LayerEout = Stopping::GetInstance()->GetEout(Emax, ReactionBeamIsotope, target, Layer);
+      double LayerEmin = std::max(Emin, LayerEout);
+      double LayerEmax = Emax;
+      double LayerSigma = InitialBeamEnegySpread;
+      SetYieldCalculationParameters(target, Layer, LayerEmax, LayerSigma);
 
-   epsrel = IntegrationepsrelDefault / IntegrationEpsRelMultFactor;
+      if (LayerEmin == LayerEmax) {
+         return YieldCalculationMultFactor * GetStragglingCrossSectionOverStopping(LayerEmin, LayerSigma);
+      }
 
-   int status = 1;
-   gsl_set_error_handler_off();
-   double result;
-   while (status) {
-      epsrel *= IntegrationEpsRelMultFactor;
-      //      status = gsl_integration_qags(&F, CrossSectionEnergy[0], En,
-      //                                    epsabs, epsrel, limit, gsl_workspace, &result, &error);
-      status = gsl_integration_qag(&F, Emin, Emax,
-                                   IntegrationepsabsDefault, epsrel, IntegrationWorkspaceSize, QAGIntegrationKey,
-                                   YieldIntegrationWorkspace, &result, &error);
-      //      status = gsl_integration_qags(&F, Emin, Emax,
-      //                                    IntegrationepsabsDefault, epsrel, IntegrationWorkspaceSize,
-      //                                    YieldIntegrationWorkspace, &result, &error);
-      //   auto work = gsl_integration_romberg_alloc(20);
-      //   size_t nevals = 0;
-      //   status = gsl_integration_romberg(&F, Emin, Emax,
-      //                                    IntegrationepsabsDefault, epsrel,
-      //                                    &result, &nevals, work);
-      //   gsl_integration_romberg_free(work);
+      gsl_function F;
+      F.function = &YieldCalculationWrap;
+      F.params = (void *)this;
+
+      epsrel = IntegrationepsrelDefault / IntegrationEpsRelMultFactor;
+
+      int status = 1;
+      gsl_set_error_handler_off();
+      double result;
+      while (status) {
+         epsrel *= IntegrationEpsRelMultFactor;
+         status = gsl_integration_qag(&F, Emin, Emax,
+                                      IntegrationepsabsDefault, epsrel, IntegrationWorkspaceSize, QAGIntegrationKey,
+                                      YieldIntegrationWorkspace, &result, &error);
+      }
+      yield += result;
    }
-   return result;
+   return yield;
+}
+
+double Reaction::GetYield(double En, double dE, double AtomicPerCent, double AtomicAbundunce, double Stopping, double enSigma) {
+   if (En < GetEmin() || En > GetEmax())
+      return 0.;
+
+   double yield = GetStragglingCrossSection(En, enSigma) * dE * 1e-27 * 1e15 * 6.24E12 * 1000 * (AtomicPerCent / 100.) * (AtomicAbundunce / 100);
+   return yield / Stopping;
 }

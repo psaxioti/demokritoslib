@@ -16,7 +16,7 @@ ReactionList::ReactionList(std::string R33folder) {
       ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
       R33Folder = std::string(result, (count > 0) ? count : 0);
       if (R33Folder == "/usr/local/bin")
-         R33Folder == std::string(std::getenv("HOME")) + "/.R33Data";
+         R33Folder = std::string(std::getenv("HOME")) + "/.R33Data";
       else
          R33Folder += "/R33Data";
    } else

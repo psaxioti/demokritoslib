@@ -111,7 +111,8 @@ public:
    /// Straggling is also considered
    /// @param Emin Lower limit of the integration. If Emin is lower than the stopping power in the target, then the yield in the Layer will be calculated.
    /// @param InitialBeamEnergy Initial Beam energy. Has to be greater than Emin
-   /// @param InitialBeamEnegySpread Initial energy spread of the beam energy
+   /// @param InitialBeamEnegySpread Initial energy spread of the beam energy.
+   ///     If negative value is provided, then no straggling will be taken into account!!!
    /// @param error Returns the absolute estimated error of the integration.
    /// @param epsrel Returns the epsrel used for the integration.
    /// @param target Target in which the beam travels
@@ -125,6 +126,9 @@ public:
    /// @param epsrelMult Sets multiplication factor to change epsrel if no convergeance is reached.
    /// @param QAG_Key Sets the QAG algorithm key. Default is 5.
    void SetIntegrationParameters(double WorkSpaceSize = 10000, double epsabs = 0, double epsrel = 1.e-6, double epsrelMult = 3, int QAG_Key = 5);
+
+   // To be removed!!!!!!!!!
+   double GetYield(double En, double dE, double AtomicPerCent, double AtomicAbundunce, double Stopping, double enSigma);
 
 private:
    void ReadR33File(bool ReadCSs = false);
@@ -149,11 +153,27 @@ private:
    gsl_spline *CS_InterpolationSpline = nullptr;
 
    // General integration Parameters
-   int IntegrationWorkspaceSize = 10000;
+   int IntegrationWorkspaceSize = 50000;
    double IntegrationepsabsDefault = 0.;
    double IntegrationepsrelDefault = 1e-6;
    double IntegrationEpsRelMultFactor = 3.;
-   int QAGIntegrationKey = 5;
+   int QAGIntegrationKey = 2;
+
+   void SetYieldCalculationParameters(Target *target, int layer, double ein, double sigma);
+   double YieldCalculation(double);
+   friend double YieldCalculationWrap(double, void *);
+   gsl_integration_workspace *YieldCalculationWorkspace = nullptr;
+   Target *YieldCalculationTarget;
+   int YieldCalculationLayer;
+   double YieldCalculationMultFactor;
+   double YieldCalculationInitialSigma;
+   double YieldCalculationEin;
+   double GetStragglingCrossSectionOverStopping(double En, double sigma);
+   double StragglingCrossSectionOverStopping(double E);
+   friend double StragglingCrossSectionOverStoppingWrap(double z, void *user_data);
+   double YieldCalculationCurrentE;
+   double YieldCalculationCurrentSigma;
+   gsl_integration_workspace *StragglingCrossSectionOverStoppingWorkspace = nullptr;
 
    void SetIntegratedYield(Target *target, int layer = 0, double sigma = 0);
    double YieldFunction(double x);
