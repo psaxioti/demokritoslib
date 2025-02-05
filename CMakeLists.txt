@@ -67,7 +67,7 @@ add_library(demmasses ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-target_sources(demmasses PUBLIC FILE_SET HEADERS FILES include/MassFunctions.hh include/Element.hh include/Isotope.hh)
+target_sources(demmasses PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/MassFunctions.hh include/Element.hh include/Isotope.hh)
 install(TARGETS demmasses
     LIBRARY
     FILE_SET HEADERS
@@ -81,7 +81,7 @@ add_library(demreaction ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-target_sources(demreaction PUBLIC FILE_SET HEADERS FILES include/Reaction.hh include/ReactionList.hh)
+target_sources(demreaction PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/Reaction.hh include/ReactionList.hh)
 install(TARGETS demreaction
     LIBRARY
     FILE_SET HEADERS
@@ -98,7 +98,7 @@ add_library(demstopping ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-target_sources(demstopping PUBLIC FILE_SET HEADERS FILES include/Stopping.hh)
+target_sources(demstopping PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/Stopping.hh)
 install(TARGETS demstopping
     LIBRARY
     FILE_SET HEADERS
@@ -113,7 +113,7 @@ add_library(demtarget ${LINKING_TYPE}
    ${RC_DEPENDS}
 )
 
-target_sources(demtarget PUBLIC FILE_SET HEADERS FILES include/Target.hh include/FitStateEnum.hh)
+target_sources(demtarget PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/Target.hh include/FitStateEnum.hh)
 install(TARGETS demtarget
     LIBRARY
     FILE_SET HEADERS
@@ -130,7 +130,7 @@ install(TARGETS demtarget
 #    ${RC_DEPENDS}
 # )
 
-# target_sources(demthreadpool PUBLIC FILE_SET HEADERS FILES include/ThreadPool.hh)
+# target_sources(demthreadpool PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/ThreadPool.hh)
 # target_link_libraries(demthreadpool ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_PTHREAD_LIBS_INIT})
 # install(TARGETS demthreadpool
 #     LIBRARY
